@@ -1,0 +1,57 @@
+
+name: Build LOGIX Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract project
+        shell: pwsh
+        run: |
+          7z x LOGIX_Project_v1.zip -y
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: 'win64_msvc2022_64'
+          cache: true
+
+      - name: Configure
+        run: cmake -S LOGIX -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package application
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build -Recurse -Filter LOGIX.exe |
+            Select-Object -First 1
+
+          if (-not $exe) {
+            throw "LOGIX.exe was not found"
+          }
+
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item $exe.FullName package/
+
+          $qtBin = Split-Path (Get-Command windeployqt.exe).Source
+          & "$qtBin\windeployqt.exe" --release "$((Resolve-Path package\LOGIX.exe).Path)"
+
+          Compress-Archive -Path package\* -DestinationPath LOGIX-Windows.zip
+
+      - name: Upload EXE package
+        uses: actions/upload-artifact@v4
+        with:
+          name: LOGIX-Windows
+          path: LOGIX-Windows.zip
