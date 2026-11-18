@@ -27,7 +27,7 @@ jobs:
           cache: true
 
       - name: Configure
-        run: cmake -S LOGIX -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S LOGIX -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_WIN32_EXECUTABLE=TRUE
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -46,12 +46,14 @@ jobs:
           Copy-Item $exe.FullName package/
 
           $qtBin = Split-Path (Get-Command windeployqt.exe).Source
+
           & "$qtBin\windeployqt.exe" --release "$((Resolve-Path package\LOGIX.exe).Path)"
 
-          Compress-Archive -Path package\* -DestinationPath LOGIX-Windows.zip
+          Compress-Archive -Path package\* -DestinationPath LOGIX-Windows.zip -Force
 
       - name: Upload EXE package
         uses: actions/upload-artifact@v4
         with:
           name: LOGIX-Windows
           path: LOGIX-Windows.zip
+          retention-days: 90
