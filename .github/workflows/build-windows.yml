@@ -19,6 +19,18 @@ jobs:
         run: |
           7z x LOGIX_Project_v1.zip -y
 
+      - name: Add LOGIX icon
+        shell: pwsh
+        run: |
+          Copy-Item LOGIX.ico LOGIX/LOGIX.ico
+
+          Set-Content -Path LOGIX/LOGIX.rc `
+            -Value 'IDI_ICON1 ICON "LOGIX.ico"' `
+            -Encoding ASCII
+
+          Add-Content -Path LOGIX/CMakeLists.txt `
+            -Value "`ntarget_sources(LOGIX PRIVATE `"`${CMAKE_CURRENT_SOURCE_DIR}/LOGIX.rc`")"
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
